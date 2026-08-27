@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>今日の活動 おたより作成ツール</title>
+  
+  <!-- iOS & PWA 対応メタタグ -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="おたより作成">
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- html2canvas & jsPDF (高画質PDF保存用) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  
+  <!-- カスタムスタイル -->
+  <link rel="stylesheet" href="css/style.css">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              200: '#fed7aa',
+              300: '#fdba74',
+              400: '#fb923c',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col antialiased selection:bg-orange-200">
+
+  <!-- ===============================
+       操作ツールバー (印刷時は非表示)
+       =============================== -->
+  <header class="no-print sticky top-0 z-30 bg-white/95 backdrop-blur shadow-md border-b border-slate-200 px-4 py-3">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- 左側：設定グループ -->
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- クラス選択（すべてひらがな） -->
+        <div class="flex items-center gap-1.5 bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-200">
+          <label for="class-select" class="text-xs font-bold text-orange-800 shrink-0">クラス:</label>
+          <select id="class-select" class="bg-transparent font-bold text-orange-950 text-sm focus:outline-none cursor-pointer">
+            <option value="ぱんだ">ぱんだ</option>
+            <option value="きりん">きりん</option>
+            <option value="ぞう">ぞう</option>
+            <option value="きりんぞう">きりんぞう</option>
+            <option value="ぱんだきりんぞう">ぱんだきりんぞう</option>
+          </select>
+        </div>
+
+        <!-- 日付選択 -->
+        <div class="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+          <label for="date-picker" class="text-xs font-bold text-slate-600 shrink-0">📅 日付:</label>
+          <input type="date" id="date-picker" class="bg-transparent text-xs text-slate-700 font-medium focus:outline-none cursor-pointer">
+          <input type="text" id="date-text-input" value="8月26日(木)" placeholder="△月×日(曜)" class="w-24 text-xs font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 focus:outline-none focus:border-orange-400">
+        </div>
+
+        <!-- 写真枚数バッジ -->
+        <div id="photo-count-badge" class="text-xs px-2.5 py-1 rounded-full font-bold bg-slate-100 text-slate-600 shrink-0">
+          0枚 (推奨 10〜20枚)
+        </div>
+      </div>
+
+      <!-- 右側：アクションボタングループ -->
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- 非表示ファイル入力 -->
+        <input type="file" id="photo-input" multiple accept="image/*" class="hidden">
+
+        <!-- 写真追加ボタン（iPad写真アプリ連携） -->
+        <button id="btn-upload" class="touch-btn bg-brand-500 hover:bg-brand-600 text-white shadow-sm flex items-center gap-1.5 text-sm py-2 px-3.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          <span>写真を追加</span>
+        </button>
+
+        <!-- サンプルデモ読み込み -->
+        <button id="btn-demo-data" class="touch-btn bg-amber-500 hover:bg-amber-600 text-white shadow-sm flex items-center gap-1 text-xs py-2 px-3" title="サンプル写真と文章をセットして確認">
+          <span>✨ サンプル読込</span>
+        </button>
+
+        <!-- レイアウト切り替え -->
+        <button id="btn-layout-toggle" class="touch-btn bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs py-2 px-3">
+          ✨ メリハリ配置
+        </button>
+
+        <!-- クリア -->
+        <button id="btn-clear" class="touch-btn bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 text-xs py-2 px-2.5" title="クリア">
+          🗑️
+        </button>
+
+        <div class="h-6 w-px bg-slate-200 mx-1 hidden sm:block"></div>
+
+        <!-- 印刷 (AirPrint) -->
+        <button id="btn-print" class="touch-btn bg-emerald-600 hover:bg-emerald-700 text-white shadow-md flex items-center gap-1.5 text-sm py-2 px-4">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+          </svg>
+          <span>印刷 / AirPrint</span>
+        </button>
+
+        <!-- PDFダウンロード -->
+        <button id="btn-download-pdf" class="touch-btn bg-sky-600 hover:bg-sky-700 text-white shadow-md flex items-center gap-1.5 text-sm py-2 px-4">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+          <span>PDF保存</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ===============================
+       メイン作業エリア (A4 プレビュー)
+       =============================== -->
+  <main class="flex-1 p-4 md:p-8 flex items-center justify-center overflow-auto">
+    <div class="a4-page-container" id="a4-page-container">
+      <div class="a4-sheet" id="a4-sheet">
+        
+        <!-- ヘッダー欄 -->
+        <header class="a4-header">
+          <!-- クラス連動イラスト ＋ タイトル -->
+          <div class="flex items-center gap-3">
+            <div id="class-icon-container" class="w-12 h-11 flex items-center justify-center shrink-0">
+              <!-- SVGイラストがJSから自動挿入されます -->
+            </div>
+            <h1 id="report-title" class="text-2xl font-black tracking-tight text-slate-800 font-bold select-none">
+              ぱんだぐみ 今日の活動
+            </h1>
+          </div>
+
+          <!-- 日付欄 -->
+          <div class="flex items-center text-xl font-bold tracking-tight text-slate-800 select-none">
+            <span id="report-date">8月26日(木)</span>
+          </div>
+        </header>
+
+        <!-- 写真 ＆ コメント欄 自動配置グリッド -->
+        <div id="a4-grid" class="a4-grid-content">
+          <!-- JSにより10〜20枚の写真と右下コメント欄が自動配置されます -->
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ローディングオーバーレイ -->
+  <div id="loading-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white px-6 py-5 rounded-2xl shadow-xl flex items-center gap-3">
+      <div class="w-6 h-6 border-3 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+      <span class="font-bold text-slate-700 text-sm">高画質PDFを生成中...</span>
+    </div>
+  </div>
+
+  <!-- スクリプト群 -->
+  <script src="js/illustrations.js"></script>
+  <script src="js/layoutEngine.js"></script>
+  <script src="js/pdfExporter.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
