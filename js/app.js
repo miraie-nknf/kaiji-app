@@ -485,7 +485,7 @@ class DaycareReportApp {
 
     // テキストエリア
     const textarea = document.createElement('textarea');
-    textarea.placeholder = '今日の活動の様子や子どもたちのエピソードをここに入力...';
+    textarea.placeholder = '';
     textarea.value = this.state.comment;
 
     // 文字入力時の処理 & フォントサイズ自動調整
