@@ -635,6 +635,9 @@ class DaycareReportApp {
     const textarea = document.createElement('textarea');
     textarea.placeholder = '';
     textarea.value = this.state.comment;
+    textarea.setAttribute('autocomplete', 'off');
+    textarea.setAttribute('autocorrect', 'on');
+    textarea.setAttribute('spellcheck', 'false');
 
     // 文字入力時の処理 & フォントサイズ自動調整 & 自動保存
     textarea.addEventListener('input', (e) => {
@@ -642,6 +645,16 @@ class DaycareReportApp {
       this.adjustCommentFontSize(textarea);
       this.autoSave();
     });
+
+    // iPad PWA / スタンドアロンモードでのキーボード起動を確実にトリガー
+    const triggerFocus = (e) => {
+      e.stopPropagation();
+      textarea.focus();
+    };
+
+    box.addEventListener('click', triggerFocus);
+    box.addEventListener('touchend', triggerFocus, { passive: true });
+    textarea.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
 
     box.appendChild(textarea);
 

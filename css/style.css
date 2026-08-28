@@ -15,7 +15,15 @@ body {
   background-color: #f1f5f9;
   color: #334155;
   -webkit-font-smoothing: antialiased;
-  -webkit-touch-callout: none;
+}
+
+/* 入力要素のiOSタッチ・選択を完全有効化（キーボード起動を保証） */
+input, textarea, select {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+  touch-action: manipulation !important;
+  pointer-events: auto !important;
 }
 
 /* ============================================================
