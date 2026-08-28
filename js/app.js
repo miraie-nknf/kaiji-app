@@ -1,4 +1,4 @@
-// app.js - メインアプリケーションロジック (フォーム1/2切り替え & PNGイラスト対応)
+// app.js - メインアプリケーションロジック (自動保存・復元・印刷後保持対応版)
 
 class DaycareReportApp {
   constructor() {
@@ -11,8 +11,17 @@ class DaycareReportApp {
       layoutStyle: 'balanced', // 'balanced' or 'uniform'
     };
 
+    this.saveTimeout = null;
+    this.init();
+  }
+
+  async init() {
     this.initElements();
     this.initEventListeners();
+    
+    // IndexedDBから前回保存されたデータを復元
+    await this.restoreSavedState();
+    
     this.render();
   }
 
@@ -59,12 +68,14 @@ class DaycareReportApp {
     this.formTypeSelect?.addEventListener('change', (e) => {
       this.state.formType = e.target.value;
       this.renderHeader();
+      this.autoSave();
     });
 
     // クラス選択
     this.classSelect?.addEventListener('change', (e) => {
       this.state.className = e.target.value;
       this.renderHeader();
+      this.autoSave();
     });
 
     // 日付ピッカー変更
@@ -76,6 +87,7 @@ class DaycareReportApp {
         this.state.dateString = formatted;
         if (this.dateTextInput) this.dateTextInput.value = formatted;
         this.renderHeader();
+        this.autoSave();
       }
     });
 
@@ -83,17 +95,19 @@ class DaycareReportApp {
     this.dateTextInput?.addEventListener('input', (e) => {
       this.state.dateString = e.target.value;
       this.renderHeader();
+      this.autoSave();
     });
 
     // 写真アップロードトリガー
-    this.btnUpload?.addEventListener('click', () => {
+    this.btnUpload?.addEventListener('click', (e) => {
+      e.preventDefault();
       this.photoInput?.click();
     });
 
     // 写真ファイル選択（iPad写真アプリから複数選択）
-    this.photoInput?.addEventListener('change', (e) => {
+    this.photoInput?.addEventListener('change', async (e) => {
       if (e.target.files && e.target.files.length > 0) {
-        this.handlePhotoUpload(e.target.files);
+        await this.handlePhotoUpload(e.target.files);
       }
       e.target.value = ''; // 次回同じファイルを選べるようにリセット
     });
@@ -116,45 +130,85 @@ class DaycareReportApp {
         }, false);
       });
 
-      this.a4PageContainer.addEventListener('drop', (e) => {
+      this.a4PageContainer.addEventListener('drop', async (e) => {
         const dt = e.dataTransfer;
         if (dt && dt.files && dt.files.length > 0) {
-          this.handlePhotoUpload(dt.files);
+          await this.handlePhotoUpload(dt.files);
         }
       });
     }
 
     // レイアウトスタイル切替
-    this.btnLayoutToggle?.addEventListener('click', () => {
+    this.btnLayoutToggle?.addEventListener('click', (e) => {
+      e.preventDefault();
       this.state.layoutStyle = this.state.layoutStyle === 'balanced' ? 'uniform' : 'balanced';
       this.btnLayoutToggle.textContent = this.state.layoutStyle === 'balanced' ? '✨ メリハリ配置' : '📐 均等グリッド';
       this.renderGrid();
+      this.autoSave();
     });
 
     // デモデータ読み込み
-    this.btnDemoData?.addEventListener('click', () => {
+    this.btnDemoData?.addEventListener('click', (e) => {
+      e.preventDefault();
       this.loadDemoData();
     });
 
-    // 全クリア
-    this.btnClear?.addEventListener('click', () => {
+    // 全クリア（ユーザーが明示的に押した時のみ初期化）
+    this.btnClear?.addEventListener('click', async (e) => {
+      e.preventDefault();
       if (confirm('写真とコメントをクリアしますか？')) {
         this.state.photos = [];
         this.state.comment = '';
+        await AppStorage.clearState();
         this.render();
       }
     });
 
-    // 印刷 (AirPrint)
-    this.btnPrint?.addEventListener('click', () => {
+    // 印刷 (AirPrint) - 画面の再読み込みやデータ消失を防止
+    this.btnPrint?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.autoSave(); // 印刷直前にも確実に最新状態を保存
       PdfExporter.printA4();
     });
 
     // PDFダウンロード
-    this.btnDownloadPdf?.addEventListener('click', () => {
+    this.btnDownloadPdf?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.autoSave();
       const filename = `${this.getTitleText()}_${this.state.dateString}.pdf`;
       PdfExporter.downloadPdf('a4-sheet', filename);
     });
+  }
+
+  // 編集内容の自動保存（IndexedDBに安全に保存）
+  autoSave() {
+    clearTimeout(this.saveTimeout);
+    this.saveTimeout = setTimeout(async () => {
+      await AppStorage.saveState(this.state);
+    }, 150);
+  }
+
+  // 保存されたデータの復元
+  async restoreSavedState() {
+    const saved = await AppStorage.loadState();
+    if (saved) {
+      if (saved.formType) this.state.formType = saved.formType;
+      if (saved.className) this.state.className = saved.className;
+      if (saved.dateString) this.state.dateString = saved.dateString;
+      if (Array.isArray(saved.photos)) this.state.photos = saved.photos;
+      if (typeof saved.comment === 'string') this.state.comment = saved.comment;
+      if (saved.layoutStyle) this.state.layoutStyle = saved.layoutStyle;
+
+      // UIコントロールの同期
+      if (this.formTypeSelect) this.formTypeSelect.value = this.state.formType;
+      if (this.classSelect) this.classSelect.value = this.state.className;
+      if (this.dateTextInput) this.dateTextInput.value = this.state.dateString;
+      if (this.btnLayoutToggle) {
+        this.btnLayoutToggle.textContent = this.state.layoutStyle === 'balanced' ? '✨ メリハリ配置' : '📐 均等グリッド';
+      }
+    }
   }
 
   // クラス名表記の取得（すべてひらがな表記）
@@ -175,9 +229,17 @@ class DaycareReportApp {
     }
   }
 
-  // 写真ファイル群の処理（複数枚を即座に確実に読み込み）
-  handlePhotoUpload(files) {
+  // 写真ファイル群の処理（自動リサイズ＆DataURL化で印刷後も永続保持）
+  async handlePhotoUpload(files) {
     if (!files || files.length === 0) return;
+
+    // ローディング表示
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) {
+      const textSpan = loadingOverlay.querySelector('span');
+      if (textSpan) textSpan.textContent = '写真を読み込み中...';
+      loadingOverlay.classList.remove('hidden');
+    }
 
     const fileArray = Array.from(files);
     const newPhotos = [];
@@ -186,23 +248,66 @@ class DaycareReportApp {
       const file = fileArray[i];
       if (!file.type || file.type.startsWith('image/') || file.name.match(/\.(jpe?g|png|heic|heif|webp|gif)$/i)) {
         try {
-          const objectUrl = URL.createObjectURL(file);
-          newPhotos.push({
-            id: 'photo_' + Date.now() + '_' + i + '_' + Math.random().toString(36).substring(2, 7),
-            url: objectUrl,
-            name: file.name || `写真 ${i + 1}`,
-            objectPosition: 'center center'
-          });
+          const optimizedDataUrl = await this.optimizeImage(file);
+          if (optimizedDataUrl) {
+            newPhotos.push({
+              id: 'photo_' + Date.now() + '_' + i + '_' + Math.random().toString(36).substring(2, 7),
+              url: optimizedDataUrl,
+              name: file.name || `写真 ${i + 1}`,
+              objectPosition: 'center center'
+            });
+          }
         } catch (e) {
-          console.error('画像読み込み失敗:', file.name, e);
+          console.error('画像最適化失敗:', file.name, e);
         }
       }
     }
 
+    if (loadingOverlay) loadingOverlay.classList.add('hidden');
+
     if (newPhotos.length > 0) {
       this.state.photos = [...this.state.photos, ...newPhotos];
       this.render();
+      this.autoSave();
     }
+  }
+
+  // 画像の最適化（A4高画質300DPI相当を維持しつつメモリ負荷を大幅軽減）
+  optimizeImage(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1600; // A4写真グリッドに最適な解像度
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // 高画質JPEGとしてBase64 DataURL化
+          resolve(canvas.toDataURL('image/jpeg', 0.88));
+        };
+        img.onerror = () => resolve(e.target.result);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
   }
 
   // デモデータ読み込み
@@ -248,6 +353,7 @@ class DaycareReportApp {
     this.state.comment = '今日は3人のスペシャルゲストと一緒に、夏祭りで使うお面とヨーヨーの制作をしました！お面では自分の担当のお店の絵や文字を書いています。ぜひ当日はオリジナルお面にも注目してくださいね♪\nヨーヨーではマスキングテープやシールを貼って飾り付け！コツが分かるととても上手に貼ることが出来ました☆その後は希望制で水遊びと室内遊びに分かれて遊んでいます！';
 
     this.render();
+    this.autoSave();
   }
 
   // フォーム1のヘッダーHTML生成（標準デザイン：左イラスト・タイトル・右日付・下線）
@@ -398,6 +504,7 @@ class DaycareReportApp {
       btnLeft.title = '前へ';
       btnLeft.innerHTML = '◀';
       btnLeft.onclick = (e) => {
+        e.preventDefault();
         e.stopPropagation();
         this.swapPhotos(index, index - 1);
       };
@@ -411,6 +518,7 @@ class DaycareReportApp {
       btnRight.title = '次へ';
       btnRight.innerHTML = '▶';
       btnRight.onclick = (e) => {
+        e.preventDefault();
         e.stopPropagation();
         this.swapPhotos(index, index + 1);
       };
@@ -423,6 +531,7 @@ class DaycareReportApp {
     btnPos.title = '位置調整';
     btnPos.innerHTML = '↕';
     btnPos.onclick = (e) => {
+      e.preventDefault();
       e.stopPropagation();
       this.cyclePhotoPosition(index);
     };
@@ -434,6 +543,7 @@ class DaycareReportApp {
     btnDel.title = '削除';
     btnDel.innerHTML = '✕';
     btnDel.onclick = (e) => {
+      e.preventDefault();
       e.stopPropagation();
       this.deletePhoto(index);
     };
@@ -480,6 +590,7 @@ class DaycareReportApp {
     this.state.photos[i] = this.state.photos[j];
     this.state.photos[j] = temp;
     this.renderGrid();
+    this.autoSave();
   }
 
   // 写真の移動
@@ -487,6 +598,7 @@ class DaycareReportApp {
     const photo = this.state.photos.splice(fromIndex, 1)[0];
     this.state.photos.splice(toIndex, 0, photo);
     this.renderGrid();
+    this.autoSave();
   }
 
   // 写真の位置調整
@@ -497,12 +609,14 @@ class DaycareReportApp {
     const nextIdx = (currentIdx + 1) % positions.length;
     photo.objectPosition = positions[nextIdx];
     this.renderGrid();
+    this.autoSave();
   }
 
   // 写真削除
   deletePhoto(index) {
     this.state.photos.splice(index, 1);
     this.renderGrid();
+    this.autoSave();
   }
 
   // コメントボックスの作成（右下に配置）
@@ -522,10 +636,11 @@ class DaycareReportApp {
     textarea.placeholder = '';
     textarea.value = this.state.comment;
 
-    // 文字入力時の処理 & フォントサイズ自動調整
+    // 文字入力時の処理 & フォントサイズ自動調整 & 自動保存
     textarea.addEventListener('input', (e) => {
       this.state.comment = e.target.value;
       this.adjustCommentFontSize(textarea);
+      this.autoSave();
     });
 
     box.appendChild(textarea);
