@@ -1,4 +1,4 @@
-// app.js - メインアプリケーションロジック (自動保存・復元・印刷後保持対応版)
+// app.js - メインアプリケーションロジック (iPad/iPhone完全対応 & コメントモーダル入力完備版)
 
 class DaycareReportApp {
   constructor() {
@@ -18,6 +18,7 @@ class DaycareReportApp {
   async init() {
     this.initElements();
     this.initEventListeners();
+    this.initModalListeners();
     
     // IndexedDBから前回保存されたデータを復元
     await this.restoreSavedState();
@@ -54,6 +55,13 @@ class DaycareReportApp {
     this.a4Sheet = document.getElementById('a4-sheet');
     this.a4Header = document.getElementById('a4-header');
     this.a4Grid = document.getElementById('a4-grid');
+
+    // コメント編集モーダル要素
+    this.commentModal = document.getElementById('comment-modal');
+    this.modalTextarea = document.getElementById('modal-comment-textarea');
+    this.modalCharCount = document.getElementById('modal-char-count');
+    this.btnCloseModal = document.getElementById('btn-close-modal');
+    this.btnSaveComment = document.getElementById('btn-save-comment');
 
     // 日付ピッカー初期値（YYYY-MM-DD）
     const today = new Date();
@@ -142,7 +150,7 @@ class DaycareReportApp {
     this.btnLayoutToggle?.addEventListener('click', (e) => {
       e.preventDefault();
       this.state.layoutStyle = this.state.layoutStyle === 'balanced' ? 'uniform' : 'balanced';
-      this.btnLayoutToggle.textContent = this.state.layoutStyle === 'balanced' ? '✨ メリハリ配置' : '📐 均等グリッド';
+      this.btnLayoutToggle.textContent = this.state.layoutStyle === 'balanced' ? '✨ メリハリ' : '📐 均等';
       this.renderGrid();
       this.autoSave();
     });
@@ -168,7 +176,7 @@ class DaycareReportApp {
     this.btnPrint?.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      this.autoSave(); // 印刷直前にも確実に最新状態を保存
+      this.autoSave();
       PdfExporter.printA4();
     });
 
@@ -180,6 +188,65 @@ class DaycareReportApp {
       const filename = `${this.getTitleText()}_${this.state.dateString}.pdf`;
       PdfExporter.downloadPdf('a4-sheet', filename);
     });
+  }
+
+  // コメント編集モーダルの初期化（iPad/iPhoneで確実にキーボードを呼び出す）
+  initModalListeners() {
+    if (!this.commentModal) return;
+
+    // モーダル内の文字数カウント
+    this.modalTextarea?.addEventListener('input', (e) => {
+      if (this.modalCharCount) {
+        this.modalCharCount.textContent = `${e.target.value.length} 文字`;
+      }
+    });
+
+    // 完了ボタン
+    this.btnSaveComment?.addEventListener('click', () => {
+      this.saveModalComment();
+    });
+
+    // 閉じるボタン
+    this.btnCloseModal?.addEventListener('click', () => {
+      this.saveModalComment();
+    });
+
+    // モーダル背景タップで保存＆閉じる
+    this.commentModal.addEventListener('click', (e) => {
+      if (e.target === this.commentModal) {
+        this.saveModalComment();
+      }
+    });
+  }
+
+  // モーダルを開く
+  openCommentModal() {
+    if (!this.commentModal || !this.modalTextarea) return;
+    this.modalTextarea.value = this.state.comment || '';
+    if (this.modalCharCount) {
+      this.modalCharCount.textContent = `${this.modalTextarea.value.length} 文字`;
+    }
+    this.commentModal.classList.remove('hidden');
+    
+    // iPadで確実にキーボードを表示
+    setTimeout(() => {
+      this.modalTextarea.focus();
+    }, 80);
+  }
+
+  // モーダルの内容を反映して閉じる
+  saveModalComment() {
+    if (!this.commentModal || !this.modalTextarea) return;
+    this.state.comment = this.modalTextarea.value;
+    this.commentModal.classList.add('hidden');
+    
+    // A4プレビュー上のテキストエリアを更新
+    const a4Textarea = document.querySelector('.comment-box textarea');
+    if (a4Textarea) {
+      a4Textarea.value = this.state.comment;
+      this.adjustCommentFontSize(a4Textarea);
+    }
+    this.autoSave();
   }
 
   // 編集内容の自動保存（IndexedDBに安全に保存）
@@ -206,7 +273,7 @@ class DaycareReportApp {
       if (this.classSelect) this.classSelect.value = this.state.className;
       if (this.dateTextInput) this.dateTextInput.value = this.state.dateString;
       if (this.btnLayoutToggle) {
-        this.btnLayoutToggle.textContent = this.state.layoutStyle === 'balanced' ? '✨ メリハリ配置' : '📐 均等グリッド';
+        this.btnLayoutToggle.textContent = this.state.layoutStyle === 'balanced' ? '✨ メリハリ' : '📐 均等';
       }
     }
   }
@@ -551,7 +618,7 @@ class DaycareReportApp {
 
     slot.appendChild(actions);
 
-    // ドラッグ＆ドロップ対応
+    // ドラッグ＆ドロップ対応（デスクトップ）
     slot.draggable = true;
     slot.addEventListener('dragstart', (e) => {
       e.dataTransfer.setData('text/plain', index);
@@ -622,9 +689,10 @@ class DaycareReportApp {
   // コメントボックスの作成（右下に配置）
   createCommentBoxElement(slotDef) {
     const box = document.createElement('div');
-    box.className = 'comment-box';
+    box.className = 'comment-box cursor-pointer group';
     box.style.gridColumn = `${slotDef.colStart} / span ${slotDef.colSpan}`;
     box.style.gridRow = `${slotDef.rowStart} / span ${slotDef.rowSpan}`;
+    box.title = 'タップしてコメントを入力';
 
     // ドット装飾ヘッダー
     const dotHeader = document.createElement('div');
@@ -635,9 +703,6 @@ class DaycareReportApp {
     const textarea = document.createElement('textarea');
     textarea.placeholder = '';
     textarea.value = this.state.comment;
-    textarea.setAttribute('autocomplete', 'off');
-    textarea.setAttribute('autocorrect', 'on');
-    textarea.setAttribute('spellcheck', 'false');
 
     // 文字入力時の処理 & フォントサイズ自動調整 & 自動保存
     textarea.addEventListener('input', (e) => {
@@ -646,15 +711,16 @@ class DaycareReportApp {
       this.autoSave();
     });
 
-    // iPad PWA / スタンドアロンモードでのキーボード起動を確実にトリガー
-    const triggerFocus = (e) => {
-      e.stopPropagation();
-      textarea.focus();
-    };
+    // タップ時に快適な入力モーダルを開く（iPad PWAで確実にキーボードを出す）
+    box.addEventListener('click', (e) => {
+      this.openCommentModal();
+    });
 
-    box.addEventListener('click', triggerFocus);
-    box.addEventListener('touchend', triggerFocus, { passive: true });
-    textarea.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+    // 編集誘導バッジ（印刷時は非表示）
+    const editBadge = document.createElement('div');
+    editBadge.className = 'no-print absolute bottom-1 right-1 bg-orange-100 hover:bg-orange-200 text-orange-700 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm opacity-80 group-hover:opacity-100 transition';
+    editBadge.innerHTML = '✏️ 入力';
+    box.appendChild(editBadge);
 
     box.appendChild(textarea);
 
