@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>今日の活動 おたより作成ツール</title>
   
   <!-- iOS & PWA 対応メタタグ -->
@@ -47,90 +47,95 @@
   <!-- ===============================
        操作ツールバー (印刷時は非表示)
        =============================== -->
-  <header class="no-print sticky top-0 z-30 bg-white/95 backdrop-blur shadow-md border-b border-slate-200 px-4 py-3">
-    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+  <header class="no-print sticky top-0 z-30 bg-white/95 backdrop-blur shadow-md border-b border-slate-200 px-3 py-2.5 sm:px-4 sm:py-3">
+    <div class="max-w-6xl mx-auto flex flex-col gap-2">
       
-      <!-- 左側：設定グループ -->
-      <div class="flex flex-wrap items-center gap-3">
-        <!-- フォーム（デザイン）選択 -->
-        <div class="flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
-          <label for="form-type-select" class="text-xs font-bold text-emerald-800 shrink-0">デザイン:</label>
-          <select id="form-type-select" class="bg-transparent font-bold text-emerald-950 text-sm focus:outline-none cursor-pointer">
-            <option value="form1">フォーム1 (標準)</option>
-            <option value="form2">フォーム2 (吹き出し)</option>
-          </select>
-        </div>
+      <!-- 1段目：基本設定グループ（デザイン・クラス・日付・枚数） -->
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 flex-1">
+          <!-- フォーム（デザイン）選択 -->
+          <div class="flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+            <label for="form-type-select" class="text-[11px] sm:text-xs font-bold text-emerald-800 shrink-0">デザイン:</label>
+            <select id="form-type-select" class="bg-transparent font-bold text-emerald-950 text-xs sm:text-sm focus:outline-none cursor-pointer">
+              <option value="form1">フォーム1 (標準)</option>
+              <option value="form2">フォーム2 (吹き出し)</option>
+            </select>
+          </div>
 
-        <!-- クラス選択（すべてひらがな） -->
-        <div class="flex items-center gap-1.5 bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-200">
-          <label for="class-select" class="text-xs font-bold text-orange-800 shrink-0">クラス:</label>
-          <select id="class-select" class="bg-transparent font-bold text-orange-950 text-sm focus:outline-none cursor-pointer">
-            <option value="ぱんだ">ぱんだ</option>
-            <option value="きりん">きりん</option>
-            <option value="ぞう">ぞう</option>
-            <option value="きりんぞう">きりんぞう</option>
-            <option value="ぱんだきりんぞう">ぱんだきりんぞう</option>
-          </select>
-        </div>
+          <!-- クラス選択（すべてひらがな） -->
+          <div class="flex items-center gap-1 bg-orange-50 px-2.5 py-1 rounded-xl border border-orange-200">
+            <label for="class-select" class="text-[11px] sm:text-xs font-bold text-orange-800 shrink-0">クラス:</label>
+            <select id="class-select" class="bg-transparent font-bold text-orange-950 text-xs sm:text-sm focus:outline-none cursor-pointer">
+              <option value="ぱんだ">ぱんだ</option>
+              <option value="きりん">きりん</option>
+              <option value="ぞう">ぞう</option>
+              <option value="きりんぞう">きりんぞう</option>
+              <option value="ぱんだきりんぞう">ぱんだきりんぞう</option>
+            </select>
+          </div>
 
-        <!-- 日付選択 -->
-        <div class="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-          <label for="date-picker" class="text-xs font-bold text-slate-600 shrink-0">📅 日付:</label>
-          <input type="date" id="date-picker" class="bg-transparent text-xs text-slate-700 font-medium focus:outline-none cursor-pointer">
-          <input type="text" id="date-text-input" value="8月26日(木)" placeholder="△月×日(曜)" class="w-24 text-xs font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 focus:outline-none focus:border-orange-400">
+          <!-- 日付選択 -->
+          <div class="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-xl border border-slate-200">
+            <input type="date" id="date-picker" class="bg-transparent text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none cursor-pointer w-7 sm:w-auto">
+            <input type="text" id="date-text-input" value="8月26日(木)" placeholder="△月×日(曜)" class="w-20 sm:w-24 text-[11px] sm:text-xs font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200 focus:outline-none focus:border-orange-400">
+          </div>
         </div>
 
         <!-- 写真枚数バッジ -->
-        <div id="photo-count-badge" class="text-xs px-2.5 py-1 rounded-full font-bold bg-slate-100 text-slate-600 shrink-0">
-          0枚 (推奨 10〜20枚)
+        <div id="photo-count-badge" class="text-[11px] sm:text-xs px-2 py-0.5 rounded-full font-bold bg-slate-100 text-slate-600 shrink-0">
+          0枚
         </div>
       </div>
 
-      <!-- 右側：アクションボタングループ -->
-      <div class="flex flex-wrap items-center gap-2">
+      <!-- 2段目：アクションボタングループ（スマホでも整然と配置） -->
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100">
         <!-- 非表示ファイル入力 -->
         <input type="file" id="photo-input" multiple accept="image/*" class="hidden">
 
-        <!-- 写真追加ボタン（iPad写真アプリ連携） -->
-        <button id="btn-upload" class="touch-btn bg-brand-500 hover:bg-brand-600 text-white shadow-sm flex items-center gap-1.5 text-sm py-2 px-3.5">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-          </svg>
-          <span>写真を追加</span>
-        </button>
+        <!-- 左側：編集系ボタン -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <!-- 写真追加ボタン（スマホ・iPad写真アプリ連携） -->
+          <button id="btn-upload" class="touch-btn bg-brand-500 hover:bg-brand-600 text-white shadow-sm flex items-center gap-1 text-xs sm:text-sm py-1.5 px-3">
+            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span>写真追加</span>
+          </button>
 
-        <!-- サンプルデモ読み込み -->
-        <button id="btn-demo-data" class="touch-btn bg-amber-500 hover:bg-amber-600 text-white shadow-sm flex items-center gap-1 text-xs py-2 px-3" title="サンプル写真と文章をセットして確認">
-          <span>✨ サンプル読込</span>
-        </button>
+          <!-- サンプルデモ読み込み -->
+          <button id="btn-demo-data" class="touch-btn bg-amber-500 hover:bg-amber-600 text-white shadow-sm flex items-center gap-1 text-[11px] sm:text-xs py-1.5 px-2.5" title="サンプル写真と文章をセットして確認">
+            <span>✨ サンプル</span>
+          </button>
 
-        <!-- レイアウト切り替え -->
-        <button id="btn-layout-toggle" class="touch-btn bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs py-2 px-3">
-          ✨ メリハリ配置
-        </button>
+          <!-- レイアウト切り替え -->
+          <button id="btn-layout-toggle" class="touch-btn bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[11px] sm:text-xs py-1.5 px-2.5">
+            ✨ メリハリ
+          </button>
 
-        <!-- クリア -->
-        <button id="btn-clear" class="touch-btn bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 text-xs py-2 px-2.5" title="クリア">
-          🗑️
-        </button>
+          <!-- クリア -->
+          <button id="btn-clear" class="touch-btn bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 text-[11px] sm:text-xs py-1.5 px-2" title="クリア">
+            🗑️
+          </button>
+        </div>
 
-        <div class="h-6 w-px bg-slate-200 mx-1 hidden sm:block"></div>
+        <!-- 右側：出力系ボタン -->
+        <div class="flex items-center gap-1.5">
+          <!-- 印刷 (AirPrint) -->
+          <button id="btn-print" class="touch-btn bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center gap-1 text-xs sm:text-sm py-1.5 px-3">
+            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+            <span>印刷</span>
+          </button>
 
-        <!-- 印刷 (AirPrint) -->
-        <button id="btn-print" class="touch-btn bg-emerald-600 hover:bg-emerald-700 text-white shadow-md flex items-center gap-1.5 text-sm py-2 px-4">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-          </svg>
-          <span>印刷 / AirPrint</span>
-        </button>
-
-        <!-- PDFダウンロード -->
-        <button id="btn-download-pdf" class="touch-btn bg-sky-600 hover:bg-sky-700 text-white shadow-md flex items-center gap-1.5 text-sm py-2 px-4">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-          </svg>
-          <span>PDF保存</span>
-        </button>
+          <!-- PDFダウンロード -->
+          <button id="btn-download-pdf" class="touch-btn bg-sky-600 hover:bg-sky-700 text-white shadow-sm flex items-center gap-1 text-xs sm:text-sm py-1.5 px-3">
+            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            <span>PDF保存</span>
+          </button>
+        </div>
       </div>
 
     </div>
@@ -139,7 +144,7 @@
   <!-- ===============================
        メイン作業エリア (A4 プレビュー)
        =============================== -->
-  <main class="flex-1 p-4 md:p-8 flex items-center justify-center overflow-auto">
+  <main class="flex-1 p-2 sm:p-4 md:p-8 flex items-center justify-center overflow-auto">
     <div class="a4-page-container" id="a4-page-container">
       <div class="a4-sheet" id="a4-sheet">
         
@@ -161,7 +166,7 @@
   <div id="loading-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center hidden">
     <div class="bg-white px-6 py-5 rounded-2xl shadow-xl flex items-center gap-3">
       <div class="w-6 h-6 border-3 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-      <span class="font-bold text-slate-700 text-sm">高画質PDFを生成中...</span>
+      <span class="font-bold text-slate-700 text-sm">処理中...</span>
     </div>
   </div>
 

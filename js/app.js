@@ -364,15 +364,15 @@ class DaycareReportApp {
 
     return `
       <div class="header-form1">
-        <div class="flex items-center gap-3 md:gap-4 h-full">
-          <div class="w-24 h-16 md:w-28 md:h-18 flex items-center justify-center shrink-0">
+        <div class="flex items-center gap-1.5 sm:gap-3 md:gap-4 h-full min-w-0">
+          <div class="class-icon-slot flex items-center justify-center shrink-0">
             ${imageHtml}
           </div>
-          <h1 class="text-3xl md:text-4xl font-black tracking-tight text-slate-800 select-none">
+          <h1 class="report-title-text font-black tracking-tight text-slate-800 select-none">
             ${title}
           </h1>
         </div>
-        <div class="flex items-center text-xl md:text-2xl font-bold tracking-tight text-slate-800 select-none shrink-0 pl-2">
+        <div class="report-date-text flex items-center font-bold tracking-tight text-slate-800 select-none shrink-0 pl-1 sm:pl-2">
           <span>${date}</span>
         </div>
       </div>
@@ -388,18 +388,18 @@ class DaycareReportApp {
     return `
       <div class="header-form2">
         <!-- 左側：吹き出しタイトル -->
-        <div class="speech-bubble flex-1 flex items-center justify-center py-3.5 px-6 mr-3">
-          <h1 class="text-3xl md:text-4xl font-black text-slate-800 tracking-wide text-center select-none">
+        <div class="speech-bubble flex-1 flex items-center justify-center mr-1.5 sm:mr-3 min-w-0">
+          <h1 class="report-title-text font-black text-slate-800 tracking-wide text-center select-none truncate">
             ${title}
           </h1>
           <div class="speech-tail"></div>
         </div>
         <!-- 右側：動物イラスト ＆ 日付 -->
-        <div class="flex flex-col items-center justify-center shrink-0 w-28 md:w-32">
-          <div class="w-24 h-14 md:w-28 md:h-16 flex items-center justify-center">
+        <div class="header-right-side flex flex-col items-center justify-center shrink-0">
+          <div class="class-icon-slot flex items-center justify-center">
             ${imageHtml}
           </div>
-          <div class="text-lg md:text-xl font-bold tracking-tight text-slate-800 text-center mt-1 select-none">
+          <div class="report-date-text font-bold tracking-tight text-slate-800 text-center select-none">
             ${date}
           </div>
         </div>
@@ -650,21 +650,21 @@ class DaycareReportApp {
     return box;
   }
 
-  // 文字数に応じたフォントサイズ自動調整
+  // 文字数に応じたフォントサイズ自動調整（スマホ・タブレット完全レスポンシブ）
   adjustCommentFontSize(textarea) {
     if (!textarea) return;
     const textLength = textarea.value.length;
     
     if (textLength < 60) {
-      textarea.style.fontSize = '14px';
+      textarea.style.fontSize = 'clamp(8.5px, 1.8cqi, 14px)';
     } else if (textLength < 120) {
-      textarea.style.fontSize = '12px';
+      textarea.style.fontSize = 'clamp(7.5px, 1.5cqi, 12px)';
     } else if (textLength < 200) {
-      textarea.style.fontSize = '10.5px';
+      textarea.style.fontSize = 'clamp(7px, 1.3cqi, 10.5px)';
     } else if (textLength < 300) {
-      textarea.style.fontSize = '9px';
+      textarea.style.fontSize = 'clamp(6.5px, 1.1cqi, 9px)';
     } else {
-      textarea.style.fontSize = '8px';
+      textarea.style.fontSize = 'clamp(6px, 0.95cqi, 8px)';
     }
   }
 
