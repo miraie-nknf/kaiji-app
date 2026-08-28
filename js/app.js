@@ -1,8 +1,9 @@
-// app.js - メインアプリケーションロジック (iPad最適化 & 複数写真確実読み込み版)
+// app.js - メインアプリケーションロジック (フォーム1/2切り替え & PNGイラスト対応)
 
 class DaycareReportApp {
   constructor() {
     this.state = {
+      formType: 'form1', // 'form1' (標準) or 'form2' (吹き出し)
       className: 'ぱんだ', // ぱんだ, きりん, ぞう, きりんぞう, ぱんだきりんぞう
       dateString: this.formatDate(new Date()),
       photos: [], // Array of { id, url, name, objectPosition: 'center center' }
@@ -26,6 +27,7 @@ class DaycareReportApp {
 
   initElements() {
     // 操作パネル要素
+    this.formTypeSelect = document.getElementById('form-type-select');
     this.classSelect = document.getElementById('class-select');
     this.datePicker = document.getElementById('date-picker');
     this.dateTextInput = document.getElementById('date-text-input');
@@ -41,9 +43,7 @@ class DaycareReportApp {
     // A4 プレビュー要素
     this.a4PageContainer = document.getElementById('a4-page-container');
     this.a4Sheet = document.getElementById('a4-sheet');
-    this.classIconContainer = document.getElementById('class-icon-container');
-    this.reportTitle = document.getElementById('report-title');
-    this.reportDate = document.getElementById('report-date');
+    this.a4Header = document.getElementById('a4-header');
     this.a4Grid = document.getElementById('a4-grid');
 
     // 日付ピッカー初期値（YYYY-MM-DD）
@@ -55,6 +55,12 @@ class DaycareReportApp {
   }
 
   initEventListeners() {
+    // デザイン（フォーム1 / フォーム2）選択
+    this.formTypeSelect?.addEventListener('change', (e) => {
+      this.state.formType = e.target.value;
+      this.renderHeader();
+    });
+
     // クラス選択
     this.classSelect?.addEventListener('change', (e) => {
       this.state.className = e.target.value;
@@ -169,24 +175,6 @@ class DaycareReportApp {
     }
   }
 
-  // クラス連動SVGイラストの取得
-  getIllustrationSvg() {
-    switch (this.state.className) {
-      case 'ぱんだ':
-        return Illustrations.panda;
-      case 'きりん':
-        return Illustrations.giraffe;
-      case 'ぞう':
-        return Illustrations.elephant;
-      case 'きりんぞう':
-        return Illustrations.kirinzou;
-      case 'ぱんだきりんぞう':
-        return Illustrations.pandakirinzou;
-      default:
-        return Illustrations.panda;
-    }
-  }
-
   // 写真ファイル群の処理（複数枚を即座に確実に読み込み）
   handlePhotoUpload(files) {
     if (!files || files.length === 0) return;
@@ -196,10 +184,8 @@ class DaycareReportApp {
 
     for (let i = 0; i < fileArray.length; i++) {
       const file = fileArray[i];
-      // 画像ファイルか確認
       if (!file.type || file.type.startsWith('image/') || file.name.match(/\.(jpe?g|png|heic|heif|webp|gif)$/i)) {
         try {
-          // メモリを圧迫せず瞬時に表示できるObject URLを使用
           const objectUrl = URL.createObjectURL(file);
           newPhotos.push({
             id: 'photo_' + Date.now() + '_' + i + '_' + Math.random().toString(36).substring(2, 7),
@@ -264,16 +250,64 @@ class DaycareReportApp {
     this.render();
   }
 
-  // ヘッダーの描画
+  // フォーム1のヘッダーHTML生成（標準デザイン：左イラスト・タイトル・右日付・下線）
+  renderHeaderForm1() {
+    const title = this.getTitleText();
+    const date = this.state.dateString;
+    const imageHtml = Illustrations.getImageHtml(this.state.className);
+
+    return `
+      <div class="header-form1">
+        <div class="flex items-center gap-3 md:gap-4 h-full">
+          <div class="w-24 h-16 md:w-28 md:h-18 flex items-center justify-center shrink-0">
+            ${imageHtml}
+          </div>
+          <h1 class="text-3xl md:text-4xl font-black tracking-tight text-slate-800 select-none">
+            ${title}
+          </h1>
+        </div>
+        <div class="flex items-center text-xl md:text-2xl font-bold tracking-tight text-slate-800 select-none shrink-0 pl-2">
+          <span>${date}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // フォーム2のヘッダーHTML生成（吹き出しデザイン：左吹き出しタイトル・右イラスト・右下日付）
+  renderHeaderForm2() {
+    const title = this.getTitleText();
+    const date = this.state.dateString;
+    const imageHtml = Illustrations.getImageHtml(this.state.className);
+
+    return `
+      <div class="header-form2">
+        <!-- 左側：吹き出しタイトル -->
+        <div class="speech-bubble flex-1 flex items-center justify-center py-3.5 px-6 mr-3">
+          <h1 class="text-3xl md:text-4xl font-black text-slate-800 tracking-wide text-center select-none">
+            ${title}
+          </h1>
+          <div class="speech-tail"></div>
+        </div>
+        <!-- 右側：動物イラスト ＆ 日付 -->
+        <div class="flex flex-col items-center justify-center shrink-0 w-28 md:w-32">
+          <div class="w-24 h-14 md:w-28 md:h-16 flex items-center justify-center">
+            ${imageHtml}
+          </div>
+          <div class="text-lg md:text-xl font-bold tracking-tight text-slate-800 text-center mt-1 select-none">
+            ${date}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ヘッダーの描画（フォームタイプに応じて切り替え）
   renderHeader() {
-    if (this.classIconContainer) {
-      this.classIconContainer.innerHTML = this.getIllustrationSvg();
-    }
-    if (this.reportTitle) {
-      this.reportTitle.textContent = this.getTitleText();
-    }
-    if (this.reportDate) {
-      this.reportDate.textContent = this.state.dateString;
+    if (!this.a4Header) return;
+    if (this.state.formType === 'form2') {
+      this.a4Header.innerHTML = this.renderHeaderForm2();
+    } else {
+      this.a4Header.innerHTML = this.renderHeaderForm1();
     }
   }
 

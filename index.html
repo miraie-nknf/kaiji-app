@@ -52,6 +52,15 @@
       
       <!-- 左側：設定グループ -->
       <div class="flex flex-wrap items-center gap-3">
+        <!-- フォーム（デザイン）選択 -->
+        <div class="flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+          <label for="form-type-select" class="text-xs font-bold text-emerald-800 shrink-0">デザイン:</label>
+          <select id="form-type-select" class="bg-transparent font-bold text-emerald-950 text-sm focus:outline-none cursor-pointer">
+            <option value="form1">フォーム1 (標準)</option>
+            <option value="form2">フォーム2 (吹き出し)</option>
+          </select>
+        </div>
+
         <!-- クラス選択（すべてひらがな） -->
         <div class="flex items-center gap-1.5 bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-200">
           <label for="class-select" class="text-xs font-bold text-orange-800 shrink-0">クラス:</label>
@@ -134,22 +143,9 @@
     <div class="a4-page-container" id="a4-page-container">
       <div class="a4-sheet" id="a4-sheet">
         
-        <!-- ヘッダー欄 -->
-        <header class="a4-header">
-          <!-- クラス連動イラスト ＋ タイトル -->
-          <div class="flex items-center gap-3 md:gap-4">
-            <div id="class-icon-container" class="w-24 h-16 md:w-28 md:h-18 flex items-center justify-center shrink-0">
-              <!-- SVGイラストがJSから自動挿入されます -->
-            </div>
-            <h1 id="report-title" class="text-3xl md:text-4xl font-black tracking-tight text-slate-800 select-none">
-              ぱんだぐみ 今日の活動
-            </h1>
-          </div>
-
-          <!-- 日付欄 -->
-          <div class="flex items-center text-xl md:text-2xl font-bold tracking-tight text-slate-800 select-none shrink-0 pl-2">
-            <span id="report-date">8月26日(木)</span>
-          </div>
+        <!-- ヘッダー欄（フォーム1 / フォーム2 に応じて動的レンダリング） -->
+        <header id="a4-header" class="a4-header-container">
+          <!-- JSからテンプレートが挿入されます -->
         </header>
 
         <!-- 写真 ＆ コメント欄 自動配置グリッド -->
