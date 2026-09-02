@@ -246,12 +246,12 @@ input, textarea, select {
   font-weight: 500;
   overflow: hidden;
   word-break: break-all;
-  font-size: clamp(10px, 1.9cqi, 16px);
+  font-size: clamp(12px, 2.3cqi, 19px);
 }
 
 .comment-box textarea::placeholder {
   color: #94a3b8;
-  font-size: clamp(9px, 1.6cqi, 13px);
+  font-size: clamp(11px, 1.9cqi, 15px);
 }
 
 /* ============================================================

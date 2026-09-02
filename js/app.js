@@ -729,21 +729,21 @@ class DaycareReportApp {
     return box;
   }
 
-  // 文字数に応じたフォントサイズ自動調整（1.2倍拡大版・スマホ・タブレット完全レスポンシブ）
+  // 文字数に応じたフォントサイズ自動調整（さらに1.2倍拡大版・スマホ・タブレット完全レスポンシブ）
   adjustCommentFontSize(textarea) {
     if (!textarea) return;
     const textLength = textarea.value.length;
     
     if (textLength < 60) {
-      textarea.style.fontSize = 'clamp(10.5px, 2.15cqi, 17px)';
+      textarea.style.fontSize = 'clamp(12.5px, 2.6cqi, 20.5px)';
     } else if (textLength < 120) {
-      textarea.style.fontSize = 'clamp(9px, 1.8cqi, 14.5px)';
+      textarea.style.fontSize = 'clamp(11px, 2.15cqi, 17.5px)';
     } else if (textLength < 200) {
-      textarea.style.fontSize = 'clamp(8.5px, 1.55cqi, 12.5px)';
+      textarea.style.fontSize = 'clamp(10px, 1.85cqi, 15px)';
     } else if (textLength < 300) {
-      textarea.style.fontSize = 'clamp(8px, 1.3cqi, 11px)';
+      textarea.style.fontSize = 'clamp(9.5px, 1.55cqi, 13px)';
     } else {
-      textarea.style.fontSize = 'clamp(7.5px, 1.15cqi, 10px)';
+      textarea.style.fontSize = 'clamp(9px, 1.4cqi, 12px)';
     }
   }
 
