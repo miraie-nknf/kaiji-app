@@ -735,15 +735,15 @@ class DaycareReportApp {
     const textLength = textarea.value.length;
     
     if (textLength < 60) {
-      textarea.style.fontSize = 'clamp(12.5px, 2.6cqi, 20.5px)';
+      textarea.style.fontSize = 'clamp(15px, 3.1cqi, 24.5px)';
     } else if (textLength < 120) {
-      textarea.style.fontSize = 'clamp(11px, 2.15cqi, 17.5px)';
+      textarea.style.fontSize = 'clamp(13px, 2.6cqi, 21px)';
     } else if (textLength < 200) {
-      textarea.style.fontSize = 'clamp(10px, 1.85cqi, 15px)';
+      textarea.style.fontSize = 'clamp(12px, 2.2cqi, 18px)';
     } else if (textLength < 300) {
-      textarea.style.fontSize = 'clamp(9.5px, 1.55cqi, 13px)';
+      textarea.style.fontSize = 'clamp(11.5px, 1.85cqi, 15.5px)';
     } else {
-      textarea.style.fontSize = 'clamp(9px, 1.4cqi, 12px)';
+      textarea.style.fontSize = 'clamp(11px, 1.7cqi, 14.5px)';
     }
   }
 
