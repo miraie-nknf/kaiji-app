@@ -176,6 +176,8 @@ class DaycareReportApp {
     this.btnPrint?.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      const a4Textarea = document.querySelector('.comment-box textarea');
+      if (a4Textarea) this.adjustCommentFontSize(a4Textarea);
       this.autoSave();
       PdfExporter.printA4();
     });
@@ -184,10 +186,33 @@ class DaycareReportApp {
     this.btnDownloadPdf?.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      const a4Textarea = document.querySelector('.comment-box textarea');
+      if (a4Textarea) this.adjustCommentFontSize(a4Textarea);
       this.autoSave();
       const filename = `${this.getTitleText()}_${this.state.dateString}.pdf`;
       PdfExporter.downloadPdf('a4-sheet', filename);
     });
+
+    // 画面リサイズや向き変更（iPad横向き/縦向き）時にコメント枠サイズに合わせて再調整
+    window.addEventListener('resize', () => {
+      const a4Textarea = document.querySelector('.comment-box textarea');
+      if (a4Textarea) this.adjustCommentFontSize(a4Textarea);
+    });
+
+    // 印刷直前の自動フィッティング
+    window.addEventListener('beforeprint', () => {
+      const a4Textarea = document.querySelector('.comment-box textarea');
+      if (a4Textarea) this.adjustCommentFontSize(a4Textarea);
+    });
+
+    // コンテナのリサイズ監視
+    if (window.ResizeObserver && this.a4PageContainer) {
+      const resizeObserver = new ResizeObserver(() => {
+        const a4Textarea = document.querySelector('.comment-box textarea');
+        if (a4Textarea) this.adjustCommentFontSize(a4Textarea);
+      });
+      resizeObserver.observe(this.a4PageContainer);
+    }
   }
 
   // コメント編集モーダルの初期化（iPad/iPhoneで確実にキーボードを呼び出す）
@@ -725,26 +750,70 @@ class DaycareReportApp {
     box.appendChild(textarea);
 
     setTimeout(() => this.adjustCommentFontSize(textarea), 10);
+    setTimeout(() => this.adjustCommentFontSize(textarea), 100);
 
     return box;
   }
 
-  // 文字数に応じたフォントサイズ自動調整（さらに1.2倍拡大版・スマホ・タブレット完全レスポンシブ）
+  // 枠の大きさ（上の写真の底辺・左の写真の右辺に揃った枠）を変えずに、
+  // 文字数や改行に応じて枠内に100%収まるようフォントサイズを動的に自動可変
   adjustCommentFontSize(textarea) {
     if (!textarea) return;
-    const textLength = textarea.value.length;
-    
-    if (textLength < 60) {
-      textarea.style.fontSize = 'clamp(15px, 3.1cqi, 24.5px)';
-    } else if (textLength < 120) {
-      textarea.style.fontSize = 'clamp(13px, 2.6cqi, 21px)';
-    } else if (textLength < 200) {
-      textarea.style.fontSize = 'clamp(12px, 2.2cqi, 18px)';
-    } else if (textLength < 300) {
-      textarea.style.fontSize = 'clamp(11.5px, 1.85cqi, 15.5px)';
-    } else {
-      textarea.style.fontSize = 'clamp(11px, 1.7cqi, 14.5px)';
+    const text = textarea.value;
+
+    // まだDOM描画されておらず高さが取れない場合は少し待って再試行
+    if (textarea.clientHeight <= 0) {
+      setTimeout(() => this.adjustCommentFontSize(textarea), 50);
+      return;
     }
+
+    // A4コンテナ幅から基準スケール（cqi相当）を算出
+    const container = this.a4PageContainer || document.getElementById('a4-page-container');
+    const containerWidth = container ? container.clientWidth : 800;
+    const cqi = containerWidth / 100;
+
+    // 文章が空の場合は標準の大きめで読みやすいサイズを設定
+    if (!text || text.trim() === '') {
+      textarea.style.fontSize = `${Math.min(26, Math.max(15, 3.1 * cqi))}px`;
+      return;
+    }
+
+    // 探索するフォントサイズの上限（文字数が少ないときは大きく）と下限
+    let maxPt = Math.min(26, Math.max(16, 3.2 * cqi));
+    let minPt = Math.max(6, 0.85 * cqi);
+
+    // 文字数に応じた上限の初期絞り込み（無駄な探索を減らし安定化）
+    const len = text.length;
+    if (len > 350) {
+      maxPt = Math.min(maxPt, 1.8 * cqi);
+    } else if (len > 250) {
+      maxPt = Math.min(maxPt, 2.2 * cqi);
+    } else if (len > 150) {
+      maxPt = Math.min(maxPt, 2.6 * cqi);
+    }
+
+    // 二分探索（バイナリサーチ）で「枠の高さ（clientHeight）を突き抜けない最大のフォントサイズ」を高速特定
+    let low = minPt;
+    let high = maxPt;
+    let bestSize = minPt;
+
+    // 8回の反復で0.1px以下の高精度で収束
+    for (let i = 0; i < 8; i++) {
+      const mid = (low + high) / 2;
+      textarea.style.fontSize = `${mid}px`;
+
+      // scrollHeight が clientHeight 以下ならテキストは枠内に完全に収まっている
+      if (textarea.scrollHeight <= textarea.clientHeight) {
+        bestSize = mid;
+        low = mid; // まだフォントを大きくできる
+      } else {
+        high = mid; // 枠からはみ出しているので小さくする
+      }
+    }
+
+    // 確定サイズを適用（サブピクセルのレンダリング誤差を防止するため0.2px安全マージン）
+    const finalSize = Math.max(minPt, bestSize - 0.2);
+    textarea.style.fontSize = `${finalSize}px`;
   }
 
   // 全体再描画

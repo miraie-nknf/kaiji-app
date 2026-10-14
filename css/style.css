@@ -235,6 +235,7 @@ input, textarea, select {
 .comment-box textarea {
   flex: 1;
   width: 100%;
+  min-height: 0 !important;
   border: none;
   background: transparent;
   resize: none;
